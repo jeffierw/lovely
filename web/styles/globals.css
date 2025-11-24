@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #e7c164;
+    --primary-dark: #caa348;
+    --bg: #f7f5f2;
+    --card: #ffffff;
+    --text: #1f1b16;
+    --muted: #7b7264;
+    --border: #e9e3d9;
+  }
+
+  body {
+    @apply bg-[var(--bg)] text-[var(--text)] font-sans antialiased;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-[var(--card)] border border-[var(--border)] rounded-[28px] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.03)];
+  }
+
+  .primary-btn {
+    @apply bg-[var(--primary)] hover:bg-[var(--primary-dark)] text-[#2d2416] font-semibold px-5 py-2.5 rounded-2xl transition;
+  }
+
+  .ghost-btn {
+    @apply border border-[var(--border)] rounded-2xl px-4 py-2 text-[var(--text)] hover:bg-[#f1ede5] transition;
+  }
+
+  .icon-btn {
+    @apply border border-[var(--border)] rounded-2xl w-10 h-10 flex items-center justify-center text-[var(--text)] hover:bg-[#f1ede5] transition;
+  }
+
+  .overlay {
+    @apply fixed inset-0 bg-white/80 backdrop-blur-lg flex items-center justify-center z-[9999] text-center text-[#1f1b16] p-6;
+  }
+}

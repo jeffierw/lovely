@@ -1,0 +1,11 @@
+[package]
+name = "funs"
+edition = "2024.beta"
+authors = ["lovely Team"]
+license = "MIT"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet-v1.54.0" }
+
+[addresses]
+funs = "0x0"

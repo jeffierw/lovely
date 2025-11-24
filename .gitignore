@@ -1,0 +1,4 @@
+AGENTS.md
+./web/node_modules
+./contract/build
+./web/dist
