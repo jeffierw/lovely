@@ -38,7 +38,7 @@ async function fetchEvents(): Promise<FeedItem[]> {
     const res = await suiClient.queryEvents({
       query: { MoveEventType: `${pkg}::events::WorkPublished` },
       limit: 50,
-      order: "Descending",
+      order: "descending",
     });
     const workIds = res.data
       .map(
@@ -150,7 +150,7 @@ export function useTopInfluencers() {
         const map = new Map<string, number>();
         const followed = await suiClient.queryEvents({
           query: { MoveEventType: `${pkg}::events::Followed` },
-          order: "Descending",
+          order: "descending",
           limit: 300,
         });
         followed.data.forEach((ev) => {
@@ -160,7 +160,7 @@ export function useTopInfluencers() {
         });
         const unfollowed = await suiClient.queryEvents({
           query: { MoveEventType: `${pkg}::events::Unfollowed` },
-          order: "Descending",
+          order: "descending",
           limit: 300,
         });
         unfollowed.data.forEach((ev) => {

@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@mysten/dapp-kit": "^0.17.7",
+    "@mysten/dapp-kit": "^0.19.9",
     "@mysten/seal": "^0.9.4",
     "@mysten/sui": "^1.45.0",
     "@mysten/suins": "^0.9.10",

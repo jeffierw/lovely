@@ -92,14 +92,14 @@ export default function ChannelPage() {
           {(works.data ?? []).map((w) => (
             <div key={w.id} className="card">
               <div className="text-xs text-[var(--muted)] mb-1">
-                {(w.gating ?? 0) === 0
+                {w.gating === "free"
                   ? "FREE"
-                  : (w.gating ?? 0) === 1
+                  : w.gating === "one"
                   ? "ONE-TIME"
                   : "SUB"}
               </div>
               <div className="font-semibold">{w.title}</div>
-              {(w.gating ?? 0) !== 0 && (
+              {w.gating !== "free" && (
                 <button className="ghost-btn mt-3">Unlock with Seal</button>
               )}
             </div>

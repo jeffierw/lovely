@@ -154,7 +154,7 @@ export function buildSignTermsTx(termsText: string) {
   const bytes = Array.from(new TextEncoder().encode(termsText))
   tx.moveCall({
     target: `${requirePackage()}::terms::sign`,
-    arguments: [tx.pure(bytes, 'vector<u8>')],
+    arguments: [tx.pure.vector('u8', bytes)],
   })
   return tx
 }

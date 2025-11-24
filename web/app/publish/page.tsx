@@ -6,7 +6,6 @@ import { buildPublishWorkTx } from '../../lib/contracts'
 import { suiToMist } from '../../lib/units'
 import { Transaction } from '@mysten/sui/transactions'
 import { useChannelCap } from '../../hooks/useChannelCap'
-import { uploadQuilt } from '../../lib/walrusQuilt'
 import { useState } from 'react'
 
 const gatingModes = [
@@ -39,7 +38,6 @@ export default function PublishPage() {
     const tx = txBuilder()
     const res = await signAndExecute({
       transaction: tx,
-      options: { showEffects: true, showEvents: true },
     })
     setTxDigest(res.digest)
   }
@@ -53,24 +51,17 @@ export default function PublishPage() {
     }
     let manifestText = manifest
     // Upload bundle via Walrus Quilt when files are provided
+    // Note: File upload functionality removed - use /create page for full upload flow
     if (files.length > 0) {
-      try {
-        const result: any = await uploadQuilt(files)
-        manifestText = result?.manifestId || manifestText
-        if (!cover && files[0]) {
-          setCover(`walrus://${result?.manifestId || files[0].name}`)
-        }
-      } catch (err: any) {
-        setError(err.message || 'Upload failed')
-        return
-      }
+      setError('Please use the /create page for file uploads with Walrus integration')
+      return
     }
     await runTx(() =>
       buildPublishWorkTx({
         capId,
         channelId,
         gating: gating as 'free' | 'one' | 'sub',
-        price: gating === 'one' ? suiToMist(price) : 0n,
+        price: gating === 'one' ? suiToMist(price) : BigInt(0),
         manifest: contentType === 'article' ? `${title}\n\n${body}\n\n${manifestText}` : manifestText,
         coverUrl: cover,
         mediaIds: [],

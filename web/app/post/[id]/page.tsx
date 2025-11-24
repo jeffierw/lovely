@@ -11,11 +11,6 @@ import { useWork } from "../../../hooks/useWork";
 import { useChannel } from "../../../hooks/useChannel";
 import { useAccessNFT } from "../../../hooks/useAccessNFT";
 import { useSubscription } from "../../../hooks/useSubscription";
-import {
-  fetchBlob,
-  fetchBlobAsText,
-  fetchBlobAsBytes,
-} from "../../../lib/walrusQuilt";
 import { sealDecrypt, localDecrypt } from "../../../lib/seal";
 import { suiClient } from "../../../lib/sui";
 import { buildUnlockOnceTx, buildSubscribeTx } from "../../../lib/contracts";
@@ -39,10 +34,18 @@ export default function PostDetailPage() {
   const [lockedContentType, setLockedContentType] = useState<
     "subscription" | "one-time" | null
   >(null);
+  const [walrusQuilt, setWalrusQuilt] = useState<any>(null);
+
+  // Dynamically load Walrus Quilt to avoid WASM SSR issues
+  useEffect(() => {
+    import("../../../lib/walrusQuilt.client").then(({ loadWalrusQuilt }) => {
+      loadWalrusQuilt().then(setWalrusQuilt);
+    });
+  }, []);
 
   useEffect(() => {
     const load = async () => {
-      if (!work.data) return;
+      if (!work.data || !walrusQuilt) return;
 
       // Reset state
       setError(null);
@@ -90,7 +93,7 @@ export default function PostDetailPage() {
           // User has subscription - decrypt and show
           try {
             console.log("[Post Debug] User has subscription, decrypting...");
-            const encryptedBytes = await fetchBlobAsBytes(blobId);
+            const encryptedBytes = await walrusQuilt.fetchBlobAsBytes(blobId);
             const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID || "";
             const decryptedBytes = await sealDecrypt(
               {
@@ -138,7 +141,7 @@ export default function PostDetailPage() {
           // User has access NFT - decrypt and show
           try {
             console.log("[Post Debug] User has access NFT, decrypting...");
-            const encryptedBytes = await fetchBlobAsBytes(blobId);
+            const encryptedBytes = await walrusQuilt.fetchBlobAsBytes(blobId);
             const decryptedBytes = await localDecrypt(
               encryptedBytes,
               parsed.encryptionKey
@@ -170,7 +173,7 @@ export default function PostDetailPage() {
         // Free content - no encryption
         console.log("[Post Debug] Loading free content");
         try {
-          const text = await fetchBlobAsText(blobId);
+          const text = await walrusQuilt.fetchBlobAsText(blobId);
           console.log("[Post Debug] Loaded free content, length:", text.length);
           setBodyHtml(text);
           setIsLocked(false);
@@ -182,7 +185,7 @@ export default function PostDetailPage() {
       }
     };
     load();
-  }, [work.data, accessNFT.data, subscription.data, account?.address]);
+  }, [work.data, accessNFT.data, subscription.data, account?.address, walrusQuilt]);
 
   const handleUnlock = async () => {
     if (!work.data || !account) return;
@@ -214,7 +217,7 @@ export default function PostDetailPage() {
 
       // After purchase, decrypt and display content
       if (parsed.encrypted && parsed.encryptionKey && parsed.walrusBlobId) {
-        const res = await fetchBlob(parsed.walrusBlobId);
+        const res = await walrusQuilt.fetchBlob(parsed.walrusBlobId);
         const encryptedBytes = new Uint8Array(await res.arrayBuffer());
 
         // Decrypt using local decryption

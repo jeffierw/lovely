@@ -1,5 +1,8 @@
 "use client";
 
+// Disable static generation for this page (useSearchParams requires dynamic rendering)
+export const dynamic = "force-dynamic";
+
 import { useEffect, useRef, useState } from "react";
 import {
   ConnectButton,
@@ -10,22 +13,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useChannelCap } from "../../hooks/useChannelCap";
 import { useWork } from "../../hooks/useWork";
-import {
-  createUploadFlow,
-  encodeFlow,
-  getRegisterTransaction,
-  uploadFlow,
-  getCertifyTransaction,
-  getUploadResult,
-  fetchBlobAsText,
-  fetchBlobAsBytes,
-  type UploadFlowState,
-} from "../../lib/walrusQuilt";
+import type { UploadFlowState } from "../../lib/walrusQuilt.client";
 import {
   sealEncrypt,
   sealDecrypt,
   localEncrypt,
   localDecrypt,
+  decryptWithBackupKey,
 } from "../../lib/seal";
 import { suiClient } from "../../lib/sui";
 import "quill/dist/quill.snow.css";
@@ -64,9 +58,17 @@ export default function CreatePage() {
   const [txDigest, setTxDigest] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [walrusQuilt, setWalrusQuilt] = useState<any>(null);
+
+  // Dynamically load Walrus Quilt to avoid WASM SSR issues
+  useEffect(() => {
+    import("../../lib/walrusQuilt.client").then(({ loadWalrusQuilt }) => {
+      loadWalrusQuilt().then(setWalrusQuilt);
+    });
+  }, []);
 
   useEffect(() => {
-    if (!work.data || !account) return;
+    if (!work.data || !account || !walrusQuilt) return;
 
     const loadContent = async () => {
       const workData = work.data;
@@ -121,7 +123,10 @@ export default function CreatePage() {
               "[Edit Debug] Content is encrypted, type:",
               parsed.encryptionType
             );
-            const encryptedData = await fetchBlobAsBytes(parsed.walrusBlobId);
+            if (!walrusQuilt) throw new Error("Walrus not loaded");
+            const encryptedData = await walrusQuilt.fetchBlobAsBytes(
+              parsed.walrusBlobId
+            );
 
             if (parsed.encryptionType === "local" && parsed.encryptionKey) {
               // One-time content: Use local decryption
@@ -250,7 +255,10 @@ export default function CreatePage() {
           } else {
             // Free content - fetch directly
             console.log("[Edit Debug] Loading as free content...");
-            const htmlContent = await fetchBlobAsText(parsed.walrusBlobId);
+            if (!walrusQuilt) throw new Error("Walrus not loaded");
+            const htmlContent = await walrusQuilt.fetchBlobAsText(
+              parsed.walrusBlobId
+            );
             console.log(
               "[Edit Debug] Loaded content length:",
               htmlContent.length
@@ -349,7 +357,8 @@ export default function CreatePage() {
 
     try {
       // Images/Video mode: Create upload flow
-      const flow = await createUploadFlow(files);
+      if (!walrusQuilt) throw new Error("Walrus not loaded");
+      const flow = await walrusQuilt.createUploadFlow(files);
       setUploadFlowState(flow);
     } catch (err: any) {
       setError(err.message || "Upload failed");
@@ -364,7 +373,8 @@ export default function CreatePage() {
     setUploadingMedia(true);
     setError(null);
     try {
-      const newState = await encodeFlow(uploadFlowState);
+      if (!walrusQuilt) throw new Error("Walrus not loaded");
+      const newState = await walrusQuilt.encodeFlow(uploadFlowState);
       setUploadFlowState(newState);
     } catch (err: any) {
       setError(err.message || "Encoding failed");
@@ -380,14 +390,23 @@ export default function CreatePage() {
     setError(null);
     try {
       // Step 2a: Register blob (requires signature)
-      const tx = getRegisterTransaction(uploadFlowState, account.address, {
-        deletable: false,
-        epochs: 5,
-      });
+      if (!walrusQuilt) throw new Error("Walrus not loaded");
+      const tx = walrusQuilt.getRegisterTransaction(
+        uploadFlowState,
+        account.address,
+        {
+          deletable: false,
+          epochs: 5,
+        }
+      );
       const result = await signAndExecute({ transaction: tx });
 
       // Step 2b: Upload to network (automatic, no signature required)
-      const newState = await uploadFlow(uploadFlowState, result.digest);
+      if (!walrusQuilt) throw new Error("Walrus not loaded");
+      const newState = await walrusQuilt.uploadFlow(
+        uploadFlowState,
+        result.digest
+      );
       setUploadFlowState(newState);
     } catch (err: any) {
       setError(err.message || "Registration or upload failed");
@@ -402,11 +421,12 @@ export default function CreatePage() {
     setUploadingMedia(true);
     setError(null);
     try {
-      const tx = getCertifyTransaction(uploadFlowState);
+      if (!walrusQuilt) throw new Error("Walrus not loaded");
+      const tx = walrusQuilt.getCertifyTransaction(uploadFlowState);
       await signAndExecute({ transaction: tx });
 
       // Get final result
-      const results = await getUploadResult(uploadFlowState);
+      const results = await walrusQuilt.getUploadResult(uploadFlowState);
       const firstResult = results[0];
       if (firstResult) {
         setManifestId(firstResult.blobId);
@@ -477,7 +497,10 @@ export default function CreatePage() {
             { type: "application/octet-stream" }
           );
 
-          const uploadState = await createUploadFlow([fileToUpload]);
+          if (!walrusQuilt) throw new Error("Walrus not loaded");
+          const uploadState = await walrusQuilt.createUploadFlow([
+            fileToUpload,
+          ]);
           setUploadFlowState({
             ...uploadState,
             manifest: {
@@ -506,7 +529,10 @@ export default function CreatePage() {
             { type: "application/octet-stream" }
           );
 
-          const uploadState = await createUploadFlow([fileToUpload]);
+          if (!walrusQuilt) throw new Error("Walrus not loaded");
+          const uploadState = await walrusQuilt.createUploadFlow([
+            fileToUpload,
+          ]);
           setUploadFlowState({
             ...uploadState,
             manifest: {
@@ -519,7 +545,8 @@ export default function CreatePage() {
         // Free content - no encryption needed
         fileToUpload = new File([body], "article.html", { type: "text/html" });
 
-        const uploadState = await createUploadFlow([fileToUpload]);
+        if (!walrusQuilt) throw new Error("Walrus not loaded");
+        const uploadState = await walrusQuilt.createUploadFlow([fileToUpload]);
         setUploadFlowState({
           ...uploadState,
           manifest: {

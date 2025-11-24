@@ -8,7 +8,7 @@ const options: {
   id: FeedType;
   label: string;
   description: string;
-  icon: React.ElementType;
+  icon: any;
 }[] = [
   {
     id: "fresh",

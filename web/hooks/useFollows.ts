@@ -64,7 +64,7 @@ export function useFollowStats(packageId?: string) {
       // gather Followed events
       const followed = await suiClient.queryEvents({
         query: { MoveEventType: `${packageId}::events::Followed` },
-        order: 'Descending',
+        order: 'descending',
         limit: 200,
       })
       followed.data.forEach((ev) => {
@@ -74,7 +74,7 @@ export function useFollowStats(packageId?: string) {
       })
       const unfollowed = await suiClient.queryEvents({
         query: { MoveEventType: `${packageId}::events::Unfollowed` },
-        order: 'Descending',
+        order: 'descending',
         limit: 200,
       })
       unfollowed.data.forEach((ev) => {

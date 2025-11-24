@@ -75,7 +75,7 @@ export function useChannelWorks(channelId?: string) {
 
       const events = await suiClient.queryEvents({
         query: { MoveEventType: `${pkg}::events::WorkPublished` },
-        order: "Descending",
+        order: "descending",
         limit: 50,
       });
       const workIds = events.data

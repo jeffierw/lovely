@@ -50,7 +50,6 @@ export default function NewChannelPage() {
       })
       const res = await signAndExecute({
         transaction: tx,
-        options: { showEffects: true, showEvents: true },
       })
       setTxDigest(res.digest)
       router.push('/dashboard')
